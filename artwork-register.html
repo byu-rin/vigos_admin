@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <title>작품 등록</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- 사이드바 -->
+    <div class="sidebar">
+        <h2>Vigos Admin</h2>
+        <a href="dashboard.html">대시보드</a>
+        <a href="artwork.html" class="active">작품 관리</a>
+        <a href="artist.html">작가 관리</a>
+    </div>
+
+    <!-- 토스트 메시지 -->
+    <div id="toast" class="toast"></div>
+
+    <!-- 메인 -->
+    <div class="main">
+        <div class="header">작품 등록 페이지</div>
+        <div class="content">
+            <h2>작품 등록 / 수정</h2>
+            <form id="artworkForm">
+                <div class="form-group">
+                    <label>작가</label>
+                    <input type="text" id="artist_name" placeholder="작가 이름 입력">
+                </div>
+                <div class="form-group">
+                    <label>작품 이름</label>
+                    <input type="text" id="artwork_title" placeholder="작품 이름 입력">
+                </div>
+                <div class="form-group">
+                    <label>작품 크기</label>
+                    <input type="text" id="artwork_size" placeholder="예: 50cm x 70cm">
+                </div>
+                <div class="form-group">
+                    <label>재료</label>
+                    <input type="text" id="artwork_ingredients" placeholder="재료 입력">
+                </div>
+                <div class="form-group">
+                    <label>설명</label>
+                    <textarea id="artwork_desc" placeholder="작품 설명 입력"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>작품 이미지</label>
+                    <input type="file" id="artwork_image" accept="image/*">
+                    <small id="currentArtImage"></small>
+                </div>
+                <div class="form-group">
+                    <label>QR 이미지</label>
+                    <input type="file" id="artwork_qr_image" accept="image/*">
+                    <small id="currentQrImage"></small>
+                </div>
+                <button class="btn" type="submit">작품 등록</button>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, addDoc, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD01WDP_RxUQd8s0L_0eSzXB2cuQ68q6sg",
+            authDomain: "aicurator-9ed42.firebaseapp.com",
+            projectId: "aicurator-9ed42",
+            storageBucket: "aicurator-9ed42.firebasestorage.app",
+            messagingSenderId: "815073584833",
+            appId: "1:815073584833:web:bbe00de9c44b8406289640",
+            measurementId: "G-7WFXM34L5N"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
+        function showToast(message) {
+            const toast = document.getElementById("toast");
+            toast.textContent = message;
+            toast.classList.add("show");
+            setTimeout(() => {
+                toast.classList.remove("show");
+            }, 3000);
+        }
+
+        const form = document.getElementById("artworkForm");
+        const editArtworkId = localStorage.getItem("editArtworkId");
+        let currentArtImageUrl = "";
+        let currentQrImageUrl = "";
+
+        // 수정 모드면 기존 데이터 채우기
+        if (editArtworkId) {
+            loadArtworkData(editArtworkId);
+        }
+
+        async function loadArtworkData(docId) {
+            try {
+                const docRef = doc(db, "artworks", docId);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const artwork = docSnap.data();
+                    document.getElementById("artist_name").value = artwork.artist || "";
+                    document.getElementById("artwork_title").value = artwork.artworkTitle || "";
+                    document.getElementById("artwork_size").value = artwork.artworkSize || "";
+                    document.getElementById("artwork_ingredients").value = artwork.artworkIngredient || "";
+                    document.getElementById("artwork_desc").value = artwork.artworkDesc || "";
+                    currentArtImageUrl = artwork.artImageRes || "";
+                    currentQrImageUrl = artwork.qrImageUrl || "";
+                    if (currentArtImageUrl) {
+                        document.getElementById("currentArtImage").textContent = "현재 이미지 있음 (새 이미지 업로드 시 교체됨)";
+                    }
+                    if (currentQrImageUrl) {
+                        document.getElementById("currentQrImage").textContent = "현재 QR 이미지 있음 (새 이미지 업로드 시 교체됨)";
+                    }
+                }
+            } catch (error) {
+                console.error("작품 데이터 로드 오류:", error);
+            }
+        }
+
+        form.addEventListener("submit", async function (e) {
+            e.preventDefault();
+
+            const artistName = document.getElementById("artist_name").value.trim();
+            const artworkTitle = document.getElementById("artwork_title").value.trim();
+            const artworkSize = document.getElementById("artwork_size").value.trim();
+            const artworkIngredient = document.getElementById("artwork_ingredients").value.trim();
+            const artworkDesc = document.getElementById("artwork_desc").value.trim();
+            const artworkImage = document.getElementById("artwork_image").files[0];
+            const artworkQrImage = document.getElementById("artwork_qr_image").files[0];
+
+            // 새 등록 시 모든 필드 필수
+            if (!editArtworkId) {
+                if (!artistName || !artworkTitle || !artworkSize || !artworkIngredient || !artworkDesc || !artworkImage || !artworkQrImage) {
+                    showToast("모든 항목을 입력해야 작품을 등록할 수 있습니다.");
+                    return;
+                }
+            } else {
+                // 수정 시 기본 정보만 필수
+                if (!artistName || !artworkTitle) {
+                    showToast("작가와 작품 이름은 필수 입력 항목입니다.");
+                    return;
+                }
+            }
+
+            try {
+                let artImageUrl = currentArtImageUrl;
+                let qrImageUrl = currentQrImageUrl;
+
+                // 작품 이미지 업로드
+                if (artworkImage) {
+                    const artworkRef = ref(storage, `artworks/${Date.now()}_${artworkImage.name}`);
+                    await uploadBytes(artworkRef, artworkImage);
+                    artImageUrl = await getDownloadURL(artworkRef);
+                }
+
+                // QR 이미지 업로드
+                if (artworkQrImage) {
+                    const qrRef = ref(storage, `artworks/${Date.now()}_qr_${artworkQrImage.name}`);
+                    await uploadBytes(qrRef, artworkQrImage);
+                    qrImageUrl = await getDownloadURL(qrRef);
+                }
+
+                const artworkData = {
+                    artist: artistName,
+                    artworkTitle: artworkTitle,
+                    artworkSize: artworkSize,
+                    artworkIngredient: artworkIngredient,
+                    artworkDesc: artworkDesc,
+                    artImageRes: artImageUrl,
+                    qrImageUrl: qrImageUrl,
+                    updatedAt: new Date()
+                };
+
+                if (editArtworkId) {
+                    // 수정 모드
+                    await updateDoc(doc(db, "artworks", editArtworkId), artworkData);
+                    localStorage.removeItem("editArtworkId");
+                    showToast("작품이 수정되었습니다.");
+                } else {
+                    // 새 등록
+                    artworkData.createdAt = new Date();
+                    await addDoc(collection(db, "artworks"), artworkData);
+                    showToast("작품이 등록되었습니다.");
+                }
+
+                setTimeout(() => {
+                    window.location.href = "artwork.html";
+                }, 1500);
+
+            } catch (error) {
+                console.error("Firestore 저장 오류:", error);
+                showToast("저장 실패: " + error.message);
+            }
+        });
+    </script>
+</body>
+
+</html>

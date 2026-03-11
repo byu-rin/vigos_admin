@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Firebase CDN -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="module" src="dashboard.js" defer></script>
+</head>
+
+<body>
+    <!-- 사이드바 -->
+    <div class="sidebar">
+        <h2>Vigos Admin</h2>
+        <a href="dashboard.html" class="active">대시보드</a>
+        <a href="artwork.html">작품 관리</a>
+        <a href="artist.html">작가 관리</a>
+    </div>
+
+    <div class="main">
+        <div class="header">
+            <input type="date" value="2025-09-22">
+        </div>
+
+        <div class="content">
+            <!-- 통계 카드 -->
+            <div class="stats">
+                <div class="card">
+                    <h3>오늘의 방문자</h3>
+                    <p>181</p>
+                    <small class="increase">▲ 5.27% Since last day</small>
+                </div>
+                <div class="card">
+                    <h3>전시 종료일</h3>
+                    <p>D-12</p>
+                </div>
+            </div>
+
+            <div class="alert">
+                긴급 알림이 있을 경우, 이 곳에 표시됩니다.
+            </div>
+
+            <div class="chart-container">
+                <h3>Sessions Overview</h3>
+                <canvas id="sessionsChart"></canvas>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

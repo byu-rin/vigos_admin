@@ -1,0 +1,254 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  display: flex;
+  height: 100vh;
+}
+
+/* 사이드바 */
+.sidebar {
+  width: 220px;
+  background: #2c3e50;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  height: 100vh;
+}
+
+.sidebar h2 {
+  margin-bottom: 20px;
+}
+
+.sidebar a {
+  color: #fff;
+  text-decoration: none;
+  margin: 10px 0;
+  display: block;
+  padding: 8px;
+  border-radius: 5px;
+}
+
+.sidebar a:hover,
+.sidebar a.active {
+  background: #34495e;
+}
+
+/* 메인 */
+.main {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.btn {
+    padding: 10px 20px;
+    background: #2c3e50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.header {
+  background: #fff;
+  padding: 15px 20px;
+  border-bottom: 1px solid #ddd;
+  font-weight: bold;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.content {
+  padding: 20px;
+  overflow-y: auto;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* 가로 가운데 정렬 */
+}
+
+/* 통계 카드 영역 */
+.stats {
+  display: flex;
+  gap: 40px;
+  margin-bottom: 20px;
+  justify-content: center;
+  /* 카드 전체를 가운데 정렬 */
+}
+
+.card {
+  flex: 1;
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* 알림 */
+.alert {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  width: 600px;
+  /* 카드와 그래프 폭 맞춤 */
+  text-align: center;
+}
+
+/* 그래프 */
+.chart-container {
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+
+  max-width: 600px;
+  /* 크기 줄이기 */
+  height: 300px;
+}
+
+.chart-container canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* 테이블 */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+th,
+td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  text-align: left;
+}
+
+th {
+  background: #2c3e50;
+  color: white;
+}
+
+/* 토스트 메시지 */
+.toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s, visibility 0.3s;
+  z-index: 9999;
+}
+
+.toast.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* 확인 토스트 (삭제 확인용) */
+.confirm-toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff;
+  color: #333;
+  padding: 24px 32px;
+  border-radius: 12px;
+  font-size: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  z-index: 10000;
+  display: none;
+  text-align: center;
+  min-width: 300px;
+}
+
+.confirm-toast.show {
+  display: block;
+}
+
+.confirm-toast-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  display: none;
+}
+
+.confirm-toast-overlay.show {
+  display: block;
+}
+
+.confirm-toast p {
+  margin: 0 0 20px 0;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.confirm-toast-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.confirm-toast-buttons button {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+
+.btn-cancel {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.btn-cancel:hover {
+  background: #d0d0d0;
+}
+
+.btn-confirm {
+  background: #e74c3c;
+  color: #fff;
+}
+
+.btn-confirm:hover {
+  background: #c0392b;
+}

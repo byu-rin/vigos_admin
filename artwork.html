@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <title>작품 관리</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- 사이드바 -->
+    <div class="sidebar">
+        <h2>Vigos Admin</h2>
+        <a href="dashboard.html">대시보드</a>
+        <a href="artwork.html" class="active">작품 관리</a>
+        <a href="artist.html">작가 관리</a>
+    </div>
+
+    <div class="main">
+        <div class="header">작품 관리 대시보드 페이지</div>
+        <div class="content">
+            <h2>작품 대시보드</h2>
+            <a href="artwork-register.html" onclick="localStorage.removeItem('editArtworkId')">➕ 작품 추가하기</a>
+            <table>
+                <thead>
+                    <tr>
+                        <th>작품아이디</th>
+                        <th>작가</th>
+                        <th>제목</th>
+                        <th>크기</th>
+                        <th>재료</th>
+                        <th>설명</th>
+                        <th>이미지</th>
+                        <th>QR이미지</th>
+                        <th>관리</th>
+                    </tr>
+                </thead>
+                <tbody id="artworkList"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 확인 토스트 -->
+    <div class="confirm-toast-overlay" id="confirmOverlay"></div>
+    <div class="confirm-toast" id="confirmToast">
+        <p id="confirmMessage"></p>
+        <div class="confirm-toast-buttons">
+            <button class="btn-cancel" id="btnCancel">취소</button>
+            <button class="btn-confirm" id="btnConfirm">확인</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD01WDP_RxUQd8s0L_0eSzXB2cuQ68q6sg",
+            authDomain: "aicurator-9ed42.firebaseapp.com",
+            projectId: "aicurator-9ed42",
+            storageBucket: "aicurator-9ed42.firebasestorage.app",
+            messagingSenderId: "815073584833",
+            appId: "1:815073584833:web:bbe00de9c44b8406289640",
+            measurementId: "G-7WFXM34L5N"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const artworkList = document.getElementById("artworkList");
+        const confirmOverlay = document.getElementById("confirmOverlay");
+        const confirmToast = document.getElementById("confirmToast");
+        const confirmMessage = document.getElementById("confirmMessage");
+        const btnCancel = document.getElementById("btnCancel");
+        const btnConfirm = document.getElementById("btnConfirm");
+
+        let deleteTargetId = null;
+
+        // 파일명 추출 함수
+        function getFileName(url) {
+            if (!url) return "-";
+            try {
+                // Firebase Storage URL에서 파일명 추출
+                const decodedUrl = decodeURIComponent(url);
+                const match = decodedUrl.match(/\/([^/?]+)\?/);
+                if (match) {
+                    // 타임스탬프 제거하고 파일명만 반환
+                    const fullName = match[1];
+                    const parts = fullName.split('_');
+                    if (parts.length > 1) {
+                        return parts.slice(1).join('_');
+                    }
+                    return fullName;
+                }
+                return url.split('/').pop().split('?')[0] || "-";
+            } catch {
+                return "-";
+            }
+        }
+
+        // Firestore에서 작품 목록 불러오기
+        async function loadArtworks() {
+            artworkList.innerHTML = "";
+            try {
+                const querySnapshot = await getDocs(collection(db, "artworks"));
+                querySnapshot.forEach((docSnap) => {
+                    const artwork = docSnap.data();
+                    const docId = docSnap.id;
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td>${docId}</td>
+                        <td>${artwork.artist || "-"}</td>
+                        <td>${artwork.artworkTitle || "-"}</td>
+                        <td>${artwork.artworkSize || "-"}</td>
+                        <td>${artwork.artworkIngredient || "-"}</td>
+                        <td>${artwork.artworkDesc || "-"}</td>
+                        <td>${getFileName(artwork.artImageRes)}</td>
+                        <td>${getFileName(artwork.qrImageUrl)}</td>
+                        <td>
+                            <button onclick="window.editArtwork('${docId}')">수정</button>
+                            <button onclick="window.showDeleteConfirm('${docId}', '${(artwork.artworkTitle || '').replace(/'/g, "\\'")}')">삭제</button>
+                        </td>
+                    `;
+                    artworkList.appendChild(row);
+                });
+            } catch (error) {
+                console.error("작품 목록 불러오기 오류:", error);
+            }
+        }
+
+        // 삭제 확인 토스트 표시
+        window.showDeleteConfirm = function(docId, title) {
+            deleteTargetId = docId;
+            confirmMessage.textContent = `'${title}' 항목을 삭제하시겠습니까?`;
+            confirmOverlay.classList.add("show");
+            confirmToast.classList.add("show");
+        };
+
+        // 토스트 숨기기
+        function hideConfirmToast() {
+            confirmOverlay.classList.remove("show");
+            confirmToast.classList.remove("show");
+            deleteTargetId = null;
+        }
+
+        // 취소 버튼
+        btnCancel.addEventListener("click", hideConfirmToast);
+        confirmOverlay.addEventListener("click", hideConfirmToast);
+
+        // 확인 버튼 - Firestore에서 삭제
+        btnConfirm.addEventListener("click", async () => {
+            if (deleteTargetId) {
+                try {
+                    await deleteDoc(doc(db, "artworks", deleteTargetId));
+                    hideConfirmToast();
+                    loadArtworks(); // 목록 새로고침
+                } catch (error) {
+                    console.error("삭제 오류:", error);
+                    alert("삭제 중 오류가 발생했습니다.");
+                }
+            }
+        });
+
+        // 수정 기능
+        window.editArtwork = function(docId) {
+            localStorage.setItem("editArtworkId", docId);
+            window.location.href = "artwork-register.html";
+        };
+
+        // 최초 실행
+        loadArtworks();
+    </script>
+</body>
+
+</html>

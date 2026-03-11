@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <title>작가 등록</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- 사이드바 -->
+    <div class="sidebar">
+        <h2>Vigos Admin</h2>
+        <a href="dashboard.html">대시보드</a>
+        <a href="artwork.html">작품 관리</a>
+        <a href="artist.html" class="active">작가 관리</a>
+    </div>
+
+    <!-- 메인 -->
+    <div class="main">
+        <div class="header">작가 등록 페이지</div>
+        <div class="content">
+            <h2>작가 등록 / 수정</h2>
+            <form id="artistForm">
+                <div class="form-group">
+                    <label>작가 이름</label>
+                    <input type="text" id="artist_name" placeholder="작가 이름 입력">
+                </div>
+                <div class="form-group">
+                    <label>작가 이미지</label>
+                    <input type="file" id="artist_image" accept="image/*">
+                    <small id="currentImage"></small>
+                </div>
+                <div class="form-group">
+                    <label>대표작 제목</label>
+                    <input type="text" id="artist_representative_title" placeholder="대표작 제목 입력">
+                </div>
+                <div class="form-group">
+                    <label>대표작 이미지</label>
+                    <input type="file" id="artist_representative_image" accept="image/*">
+                    <small id="currentRepresentativeImage"></small>
+                </div>
+                <div class="form-group">
+                    <label>작가의 한마디</label>
+                    <input type="text" id="artist_comment" placeholder="안녕하세요. 작가 000입니다.">
+                </div>
+                <div class="form-group">
+                    <label>전공 또는 학부</label>
+                    <input type="text" id="artist_major" placeholder="예: 도예학과">
+                </div>
+                <div class="form-group">
+                    <label>작가의 웹사이트 URL 주소</label>
+                    <input type="text" id="artist_website_url" placeholder="예: www.example.com">
+                </div>
+                <div class="form-group">
+                    <label>작가의 유튜브 채널 링크</label>
+                    <input type="text" id="artist_youtube_url" placeholder="예: https://youtube.com/...">
+                </div>
+                <div class="form-group">
+                    <label>작가의 포트폴리오 URL 주소</label>
+                    <input type="text" id="artist_portfolio_url" placeholder="예: www.example.com">
+                </div>
+                <div class="form-group">
+                    <label>작가의 이력서 URL 주소</label>
+                    <input type="text" id="artist_resume_url" placeholder="예: www.example.com">
+                </div>
+                <div class="form-group">
+                    <label>작가의 채널 소개 멘트</label>
+                    <input type="text" id="artist_channel_information" placeholder="예: 안녕하세요. 작가 000의 채널입니다.">
+                </div>
+                <div class="form-group">
+                    <label>작가의 이메일</label>
+                    <input type="text" id="artist_email" placeholder="예: example@naver.com">
+                </div>
+                <div class="form-group">
+                    <label>작가의 Instagram Id</label>
+                    <input type="text" id="artist_instagram" placeholder="예: @example_id">
+                </div>
+                <div class="form-group">
+                    <label>작가의 카톡 id</label>
+                    <input type="text" id="artist_kakao_id" placeholder="예: example_yeon">
+                </div>
+                <div class="form-group">
+                    <label>작가의 전화번호</label>
+                    <input type="text" id="artist_phone_number" placeholder="010-0000-0000">
+                </div>
+                <button class="btn" type="submit">작가 등록</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 토스트 메시지 -->
+    <div id="toast" class="toast"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, addDoc, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD01WDP_RxUQd8s0L_0eSzXB2cuQ68q6sg",
+            authDomain: "aicurator-9ed42.firebaseapp.com",
+            projectId: "aicurator-9ed42",
+            storageBucket: "aicurator-9ed42.firebasestorage.app",
+            messagingSenderId: "815073584833",
+            appId: "1:815073584833:web:bbe00de9c44b8406289640",
+            measurementId: "G-7WFXM34L5N"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
+        function showToast(message) {
+            const toast = document.getElementById("toast");
+            toast.textContent = message;
+            toast.classList.add("show");
+            setTimeout(() => {
+                toast.classList.remove("show");
+            }, 3000);
+        }
+
+        const form = document.getElementById("artistForm");
+        const editArtistId = localStorage.getItem("editArtistId");
+        let currentImageUrl = "";
+        let currentRepresentativeImageUrl = "";
+
+        // 수정 모드면 기존 데이터 채우기
+        if (editArtistId) {
+            loadArtistData(editArtistId);
+        }
+
+        async function loadArtistData(docId) {
+            try {
+                const docRef = doc(db, "artists", docId);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const artist = docSnap.data();
+                    document.getElementById("artist_name").value = artist.name || "";
+                    document.getElementById("artist_comment").value = artist.comment || "";
+                    document.getElementById("artist_major").value = artist.major || "";
+                    document.getElementById("artist_website_url").value = artist.website || "";
+                    document.getElementById("artist_youtube_url").value = artist.youtube || "";
+                    document.getElementById("artist_portfolio_url").value = artist.portfolio || "";
+                    document.getElementById("artist_resume_url").value = artist.resume || "";
+                    document.getElementById("artist_channel_information").value = artist.intro || "";
+                    document.getElementById("artist_email").value = artist.email || "";
+                    document.getElementById("artist_instagram").value = artist.instagram || "";
+                    document.getElementById("artist_kakao_id").value = artist.kakao || "";
+                    document.getElementById("artist_phone_number").value = artist.phone || "";
+                    document.getElementById("artist_representative_title").value = artist.representativeTitle || "";
+                    currentImageUrl = artist.image || "";
+                    if (currentImageUrl) {
+                        document.getElementById("currentImage").textContent = "현재 이미지 있음 (새 이미지 업로드 시 교체됨)";
+                    }
+                    currentRepresentativeImageUrl = artist.representativeImage || "";
+                    if (currentRepresentativeImageUrl) {
+                        document.getElementById("currentRepresentativeImage").textContent = "현재 대표작 이미지 있음 (새 이미지 업로드 시 교체됨)";
+                    }
+                }
+            } catch (error) {
+                console.error("작가 데이터 로드 오류:", error);
+            }
+        }
+
+        form.addEventListener("submit", async function (e) {
+            e.preventDefault();
+
+            const artistName = document.getElementById("artist_name").value.trim();
+            if (!artistName) {
+                showToast("작가 이름은 필수 입력 항목입니다.");
+                return;
+            }
+
+            try {
+                let imageUrl = currentImageUrl;
+                const fileInput = document.getElementById("artist_image");
+
+                // 새 이미지가 업로드되면 Storage에 저장
+                if (fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    const storageRef = ref(storage, `artists/${Date.now()}_${file.name}`);
+                    await uploadBytes(storageRef, file);
+                    imageUrl = await getDownloadURL(storageRef);
+                }
+
+                // 대표작 이미지 업로드
+                let representativeImageUrl = currentRepresentativeImageUrl;
+                const repFileInput = document.getElementById("artist_representative_image");
+                if (repFileInput.files.length > 0) {
+                    const repFile = repFileInput.files[0];
+                    const repStorageRef = ref(storage, `artists/representative/${Date.now()}_${repFile.name}`);
+                    await uploadBytes(repStorageRef, repFile);
+                    representativeImageUrl = await getDownloadURL(repStorageRef);
+                }
+
+                const artistData = {
+                    name: artistName,
+                    image: imageUrl,
+                    representativeTitle: document.getElementById("artist_representative_title").value.trim(),
+                    representativeImage: representativeImageUrl,
+                    comment: document.getElementById("artist_comment").value.trim(),
+                    major: document.getElementById("artist_major").value.trim(),
+                    website: document.getElementById("artist_website_url").value.trim(),
+                    youtube: document.getElementById("artist_youtube_url").value.trim(),
+                    portfolio: document.getElementById("artist_portfolio_url").value.trim(),
+                    resume: document.getElementById("artist_resume_url").value.trim(),
+                    intro: document.getElementById("artist_channel_information").value.trim(),
+                    email: document.getElementById("artist_email").value.trim(),
+                    instagram: document.getElementById("artist_instagram").value.trim(),
+                    kakao: document.getElementById("artist_kakao_id").value.trim(),
+                    phone: document.getElementById("artist_phone_number").value.trim(),
+                    updatedAt: new Date()
+                };
+
+                if (editArtistId) {
+                    // 수정 모드
+                    await updateDoc(doc(db, "artists", editArtistId), artistData);
+                    localStorage.removeItem("editArtistId");
+                    showToast("작가 정보가 수정되었습니다.");
+                } else {
+                    // 새 등록
+                    artistData.createdAt = new Date();
+                    await addDoc(collection(db, "artists"), artistData);
+                    showToast("작가가 등록되었습니다.");
+                }
+
+                setTimeout(() => {
+                    window.location.href = "artist.html";
+                }, 1500);
+
+            } catch (error) {
+                console.error("Firestore 저장 오류:", error);
+                showToast("저장 실패: " + error.message);
+            }
+        });
+    </script>
+</body>
+</html>
